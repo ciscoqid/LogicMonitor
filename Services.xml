@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<feed  version="1.0" hasPendingRequests="false" >
+  <company></company>
+  <status>200</status>
+  <errmsg>OK</errmsg>
+  <interval>0</interval>
+    <entry type="predatasource">
+        <version>1587068510</version>
+        <name>Services</name>
+        <displayedas>Services</displayedas>
+        <description>Monitors state of Windows Services
+
+- It automatically erases instances that no longer match the filters applied
+- Discovers only instances set to &#39;Automatically&#39; start</description>
+        <collector>batchscript</collector>
+        <hasMultiInstances>true</hasMultiInstances>
+        <schedule>300</schedule>
+        <appliesTo>isWindows() &#38;&#38; join(system.staticgroups,&#34;,&#34;) =~ &#34;HudsonBayCapital&#34;</appliesTo>
+        <wildcardauto>true</wildcardauto>
+        <wildcardpersist>false</wildcardpersist>
+        <wildcardlinuxscript>ad_script</wildcardlinuxscript>
+        <wildcardlinuxcmdline>type=&#34;embeded&#34; </wildcardlinuxcmdline>
+        <wildcardwinscript>ad_script</wildcardwinscript>
+        <wildcardwincmdline>type=&#34;embeded&#34; </wildcardwincmdline>
+        <wildcardgroovyscript>import com.santaba.agent.groovyapi.win32.WMI;
+
+def host = hostProps.get(&#34;system.hostname&#34;);
+def svc_name = [];
+def svc_displayname = [];
+
+// get the service list
+def service_list = WMI.queryAll(host, &#34;select * from win32_Service WHERE STARTMODE = \&#34;AUTO\&#34;&#34;);
+
+// enumerate as a map
+service_list.each
+{ service_map -&#62;
+    // enumerate each of the fields in this service map
+    service_map.each
+    { key,value -&#62;
+        //grab the name
+        if ((key == &#34;NAME&#34;) )
+        {
+            //feed the svc list
+            svc_name.add(value)
+            //println value + &#34;##&#34;+value;
+        }
+        //grab the displayname
+        if ((key == &#34;DISPLAYNAME&#34;) )
+        {
+            //feed the svc list
+            svc_displayname.add(value)
+        }
+    } 
+}
+
+//iterate to the built list &#39;svc_name&#39; &#38; extract values to build the output line(s)
+svc_name.eachWithIndex { item, index -&#62;
+    //check for SpecialCharacters &#38; remove them
+    item2=SpecialCharacterCheck(item)
+
+    println item2+&#34;##&#34;+svc_displayname[index];
+}
+
+return(0);
+
+//according to :
+//https://www.logicmonitor.com/support/logicmodules/datasources/active-discovery/script-active-discovery
+//active discovery WILDVALUE cannot contain  [&#39;=&#39;,&#39;:&#39;,&#39;\&#39;,&#39;#&#39;,&#39;space&#39;] characters
+//the function below will get rid of those special characters if they exist
+def SpecialCharacterCheck(service){
+	//special characters not allowed in ActiveDiscovery
+	def specialCharacters = ~/\=|\:|\\|\#|\s/
+
+	//replace the special character by nothing &#38; return the &#39;new&#39; service name
+	service=service.replaceAll(specialCharacters, &#39;&#39;)
+	//println(service); //DEBUG
+
+	return service
+}</wildcardgroovyscript>
+        <wildcardschedule>0</wildcardschedule>
+        <wildcarddisable>false</wildcarddisable>
+        <wildcarddeleteinactive>true</wildcarddeleteinactive>
+        <agdmethod>none</agdmethod>
+        <agdparams></agdparams>
+        <group>Windows Services</group>
+        <tags></tags>
+        <technology>#04/16/2020
+Datasource created with the intent of don&#39;t perform a WMI query for each service instance (this will reduce the collector usage)</technology>
+        <adlist><![CDATA[{"agdmethod":"none","method":"ad_script","agdparams":"","id":0,"filters":[{"attribute":"##WILDVALUE##","operation":"RegexNotMatch","value":"EFS|adcscm|AdobeARMservice|AeLookupSvc|BITS|CA-MessageQueuing|CbDefenseWSC|CcmExec|CitrixXenAppCommandsRemoting|cloudntfs|clr_optimization_v2.0.50727_32|clr_optimization_v2.0.50727_64|clr_optimization_v4.0.30319_32|clr_optimization_v4.0.30319_64|DPS|gfi_lanss11_attservice|gupdate|gupdatem|iphlpsvc|lansweeperservice|LastPass AD Client|LTService|LTSvcMon|MapsBroker|MATLAB License Server|MMCSS|MozillaMaintenance|MSExchangeNotificationsBroker|msiserver|NetPipeActivator|NetTcpActivator|NfsClnt|NPSrvHost|pla|PlugPlay|ShellHWDetection|Snare|spiceworks|Splunkd|SplunkForwarder|splunkweb|sppsvc|spupdsvc|SQL Server VSS Writer|stisvc|swi_update_64|SysEDGE|SysmonLog|TBS|Themes|TightVNC|TMBMServer|TrustedInstaller|tvnserver|vimPBSM|VSS|WbioSrvc|WinDefend|WinHttpAutoProxySvc|WinVNC4|wuauserv|wuauserv|Zabbix Agent|SCardSvr|RemoteRegistry|gpsvc|tiledatamodelsvc"},{"attribute":"##WILDVALUE##","operation":"RegexNotMatch","value":"##service.exclusions##"}],"params":{"type":"embeded","groovyscript":"import com.santaba.agent.groovyapi.win32.WMI;\n\ndef host = hostProps.get(\"system.hostname\");\ndef svc_name = [];\ndef svc_displayname = [];\n\n// get the service list\ndef service_list = WMI.queryAll(host, \"select * from win32_Service WHERE STARTMODE = \\\"AUTO\\\"\");\n\n// enumerate as a map\nservice_list.each\n{ service_map ->\n    // enumerate each of the fields in this service map\n    service_map.each\n    { key,value ->\n        //grab the name\n        if ((key == \"NAME\") )\n        {\n            //feed the svc list\n            svc_name.add(value)\n            //println value + \"##\"+value;\n        }\n        //grab the displayname\n        if ((key == \"DISPLAYNAME\") )\n        {\n            //feed the svc list\n            svc_displayname.add(value)\n        }\n    } \n}\n\n//iterate to the built list 'svc_name' & extract values to build the output line(s)\nsvc_name.eachWithIndex { item, index ->\n    //check for SpecialCharacters & remove them\n    item2=SpecialCharacterCheck(item)\n\n    println item2+\"##\"+svc_displayname[index];\n}\n\nreturn(0);\n\n//according to :\n//https://www.logicmonitor.com/support/logicmodules/datasources/active-discovery/script-active-discovery\n//active discovery WILDVALUE cannot contain  ['=',':','\\','#','space'] characters\n//the function below will get rid of those special characters if they exist\ndef SpecialCharacterCheck(service){\n\t//special characters not allowed in ActiveDiscovery\n\tdef specialCharacters = ~/\\=|\\:|\\\\|\\#|\\s/\n\n\t//replace the special character by nothing & return the 'new' service name\n\tservice=service.replaceAll(specialCharacters, '')\n\t//println(service); //DEBUG\n\n\treturn service\n}"}}]]></adlist>
+        <schemaVersion>2</schemaVersion>
+        <dataSourceType>1</dataSourceType>
+        <attributes>
+        <attribute>
+            <name>scripttype</name>
+            <value>embed</value>
+            <comment></comment>
+        </attribute>
+        <attribute>
+            <name>scriptgroovy</name>
+            <value>import com.santaba.agent.groovyapi.win32.WMI;
+
+def host = hostProps.get(&#34;system.hostname&#34;);
+def svc_name = [];
+def svc_state = [];
+def svc_status = [];
+
+// get the service list
+def service_list = WMI.queryAll(host, &#34;select * from win32_Service WHERE STARTMODE = \&#34;AUTO\&#34;&#34;);
+
+// enumerate as a map
+service_list.each
+{ service_map -&#62;
+    // enumerate each of the fields in this service map
+    service_map.each
+    { key,value -&#62;
+        //grab the name
+        if ((key == &#34;NAME&#34;) )
+        {
+            //add the service name into the &#39;svc&#39; list
+            svc_name.add(value) 
+        }
+        //grab the state
+        if ((key==&#34;STATE&#34;)) {
+            //add the service state into the &#39;state&#39; list
+            svc_state.add(value)
+        }
+        //grab the status
+        if ((key==&#34;STATUS&#34;)) {
+            //add the service state into the &#39;state&#39; list
+            svc_status.add(value)
+        }
+    } 
+}
+
+//iterate to the built list &#39;svc&#39; &#38; extract values to build the output line(s)
+svc_name.eachWithIndex { item, index -&#62;
+    //check for SpecialCharacters &#38; remove them
+    item2=SpecialCharacterCheck(item)
+
+    //convert &#39;Running&#39; to bool (for the datapoint to analyze it) from STATE
+    if(svc_state[index]==&#34;Running&#34;){
+        println item2 + &#34;.state=1&#34;
+    }else{
+        println item2 + &#34;.state=0&#34; 
+    }
+    
+    //convert &#39;OK&#39; to bool (for the datapoint to analyze it) from STATUS
+    if(svc_status[index] == &#34;OK&#34;){
+        println item2 + &#34;.status=1&#34;
+    }else{
+        println item2 + &#34;.status=0&#34; 
+    }
+}
+
+return(0);
+
+//according to :
+//https://www.logicmonitor.com/support/logicmodules/datasources/active-discovery/script-active-discovery
+//active discovery WILDVALUE cannot contain  [&#39;=&#39;,&#39;:&#39;,&#39;\&#39;,&#39;#&#39;,&#39;space&#39;] characters
+//the function below will get rid of those special characters if they exist
+def SpecialCharacterCheck(service){
+	//special characters not allowed in ActiveDiscovery
+	def specialCharacters = ~/\=|\:|\\|\#|\s/
+
+	//replace the special character by nothing &#38; return the &#39;new&#39; service name
+	service=service.replaceAll(specialCharacters, &#39;&#39;)
+	//println(service); //DEBUG
+
+	return service
+}</value>
+            <comment></comment>
+        </attribute>
+        <attribute>
+            <name>windowsscript</name>
+            <value></value>
+            <comment></comment>
+        </attribute>
+        <attribute>
+            <name>linuxscript</name>
+            <value></value>
+            <comment></comment>
+        </attribute>
+        <attribute>
+            <name>windowscmdline</name>
+            <value></value>
+            <comment></comment>
+        </attribute>
+        <attribute>
+            <name>linuxcmdline</name>
+            <value></value>
+            <comment></comment>
+        </attribute>
+        <attribute>
+            <name>__filter_0</name>
+            <value>##WILDVALUE##	RegexNotMatch	EFS|adcscm|AdobeARMservice|AeLookupSvc|BITS|CA-MessageQueuing|CbDefenseWSC|CcmExec|CitrixXenAppCommandsRemoting|cloudntfs|clr_optimization_v2.0.50727_32|clr_optimization_v2.0.50727_64|clr_optimization_v4.0.30319_32|clr_optimization_v4.0.30319_64|DPS|gfi_lanss11_attservice|gupdate|gupdatem|iphlpsvc|lansweeperservice|LastPass AD Client|LTService|LTSvcMon|MapsBroker|MATLAB License Server|MMCSS|MozillaMaintenance|MSExchangeNotificationsBroker|msiserver|NetPipeActivator|NetTcpActivator|NfsClnt|NPSrvHost|pla|PlugPlay|ShellHWDetection|Snare|spiceworks|Splunkd|SplunkForwarder|splunkweb|sppsvc|spupdsvc|SQL Server VSS Writer|stisvc|swi_update_64|SysEDGE|SysmonLog|TBS|Themes|TightVNC|TMBMServer|TrustedInstaller|tvnserver|vimPBSM|VSS|WbioSrvc|WinDefend|WinHttpAutoProxySvc|WinVNC4|wuauserv|wuauserv|Zabbix Agent|SCardSvr|RemoteRegistry|gpsvc|tiledatamodelsvc</value>
+            <comment>AST Global NT Services Excludes</comment>
+        </attribute>
+        <attribute>
+            <name>__filter_1</name>
+            <value>##WILDVALUE##	RegexNotMatch	##service.exclusions##</value>
+            <comment>Custom property to be applied within CLIENTS group (used to filter services)</comment>
+        </attribute>
+        </attributes>
+        <datapoints>
+        <datapoint>
+            <name>State</name>
+            <dataType>7</dataType>
+            <type>2</type>
+            <postprocessormethod>namevalue</postprocessormethod>
+            <postprocessorparam>##WILDVALUE##.state</postprocessorparam>
+            <usevalue>output</usevalue>
+            <alertexpr>!= 1 1 1</alertexpr>
+            <alertmissing>1</alertmissing>
+            <alertsubject></alertsubject>
+            <alertbody>The Windows service ##INSTANCE## ##DSIDESCRIPTION## on ##HOST## is not running.
+This started at ##START## - or ##DURATION## ago.</alertbody>
+            <enableanomalyalertsuppression></enableanomalyalertsuppression>
+            <description></description>
+            <maxvalue>1</maxvalue>
+            <minvalue>0</minvalue>
+            <userparam1></userparam1>
+            <userparam2></userparam2>
+            <userparam3></userparam3>
+            <iscomposite>false</iscomposite>
+            <rpn></rpn>
+            <alertTransitionIval>1</alertTransitionIval>
+            <alertClearTransitionIval>0</alertClearTransitionIval>
+        </datapoint>
+        <datapoint>
+            <name>Status</name>
+            <dataType>7</dataType>
+            <type>2</type>
+            <postprocessormethod>namevalue</postprocessormethod>
+            <postprocessorparam>##WILDVALUE##.status</postprocessorparam>
+            <usevalue>output</usevalue>
+            <alertexpr></alertexpr>
+            <alertmissing>1</alertmissing>
+            <alertsubject></alertsubject>
+            <alertbody></alertbody>
+            <enableanomalyalertsuppression></enableanomalyalertsuppression>
+            <description></description>
+            <maxvalue>1</maxvalue>
+            <minvalue>0</minvalue>
+            <userparam1></userparam1>
+            <userparam2></userparam2>
+            <userparam3></userparam3>
+            <iscomposite>false</iscomposite>
+            <rpn></rpn>
+            <alertTransitionIval>3</alertTransitionIval>
+            <alertClearTransitionIval>0</alertClearTransitionIval>
+        </datapoint>
+        <datapoint>
+            <name>RunningStatus</name>
+            <dataType>7</dataType>
+            <type>2</type>
+            <postprocessormethod>expression</postprocessormethod>
+            <postprocessorparam>if(eq(State,1),Status,1)</postprocessorparam>
+            <usevalue></usevalue>
+            <alertexpr>!= 1 1 1</alertexpr>
+            <alertmissing>1</alertmissing>
+            <alertsubject></alertsubject>
+            <alertbody>The windows service ##INSTANCE## ##DSIDESCRIPTION## on ##HOST## is running, but not in the OK state.
+It may be in error, degraded or starting/stoppingstate.
+This started at ##START## - or ##DURATION## ago.</alertbody>
+            <enableanomalyalertsuppression></enableanomalyalertsuppression>
+            <description>If service is running, alert if Status is not OK.</description>
+            <maxvalue></maxvalue>
+            <minvalue></minvalue>
+            <userparam1></userparam1>
+            <userparam2></userparam2>
+            <userparam3></userparam3>
+            <iscomposite>false</iscomposite>
+            <rpn></rpn>
+            <alertTransitionIval>3</alertTransitionIval>
+            <alertClearTransitionIval>0</alertClearTransitionIval>
+        </datapoint>
+        </datapoints>
+        <graphs>
+        <graph>
+            <name>State</name>
+            <title>State</title>
+            <verticallabel>State</verticallabel>
+            <rigid>false</rigid>
+            <maxvalue>5.0</maxvalue>
+            <minvalue>0.0</minvalue>
+            <displayprio>1</displayprio>
+            <timescale>1day</timescale>
+            <base1024>false</base1024>
+            <graphdatapoints>
+        <graphdatapoint>
+            <name>State</name>
+            <datapointname>State</datapointname>
+            <cf>1</cf>
+        </graphdatapoint>
+            </graphdatapoints>
+            <graphvirtualdatapoints>
+            </graphvirtualdatapoints>
+            <graphdatas>
+            <graphdata>
+                <type>1</type>
+                <legend>State 1 = Running</legend>
+                <color>blue</color>
+                <datapointname>State</datapointname>
+                <isvirtualdatapoint>false</isvirtualdatapoint>
+            </graphdata>
+            </graphdatas>
+        </graph>
+        <graph>
+            <name>Status</name>
+            <title>Status</title>
+            <verticallabel>Status</verticallabel>
+            <rigid>false</rigid>
+            <maxvalue>5.0</maxvalue>
+            <minvalue>0.0</minvalue>
+            <displayprio>1</displayprio>
+            <timescale>1day</timescale>
+            <base1024>false</base1024>
+            <graphdatapoints>
+        <graphdatapoint>
+            <name>Status</name>
+            <datapointname>Status</datapointname>
+            <cf>1</cf>
+        </graphdatapoint>
+            </graphdatapoints>
+            <graphvirtualdatapoints>
+            </graphvirtualdatapoints>
+            <graphdatas>
+            <graphdata>
+                <type>1</type>
+                <legend>Status 1 = OK</legend>
+                <color>blue</color>
+                <datapointname>Status</datapointname>
+                <isvirtualdatapoint>false</isvirtualdatapoint>
+            </graphdata>
+            </graphdatas>
+        </graph>
+        </graphs>
+        <overviewgraphs>
+        </overviewgraphs>
+        <scripts>
+        </scripts>
+    </entry>
+</feed>
