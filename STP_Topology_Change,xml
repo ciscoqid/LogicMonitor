@@ -5,68 +5,99 @@
   <errmsg>OK</errmsg>
   <interval>0</interval>
     <entry type="predatasource">
-        <version>1599215138</version>
+        <version>1599246328</version>
         <name>STP_Topology_Change</name>
         <displayedas>Topology Change</displayedas>
         <description>This will get the TCN (Topology Change) value per Vlan</description>
         <collector>batchscript</collector>
         <hasMultiInstances>true</hasMultiInstances>
         <schedule>300</schedule>
-        <appliesTo>system.displayname == &#34;AMP-CB-CORE-SW01&#34;</appliesTo>
+        <appliesTo>isNetwork()</appliesTo>
         <wildcardauto>true</wildcardauto>
         <wildcardpersist>false</wildcardpersist>
         <wildcardlinuxscript>ad_script</wildcardlinuxscript>
         <wildcardlinuxcmdline>type=&#34;embeded&#34; </wildcardlinuxcmdline>
         <wildcardwinscript>ad_script</wildcardwinscript>
         <wildcardwincmdline>type=&#34;embeded&#34; </wildcardwincmdline>
-        <wildcardgroovyscript>import com.santaba.agent.groovyapi.expect.Expect;
-import com.santaba.agent.groovyapi.snmp.Snmp;
-import com.santaba.agent.groovyapi.http.*;
-import com.santaba.agent.groovyapi.jmx.*;
-import org.xbill.DNS.*;
-import com.santaba.agent.groovyapi.snmp.Snmp;
+        <wildcardgroovyscript>import com.santaba.agent.groovyapi.snmp.Snmp;
+
+
 
 //array to store the interfaces
+
 array_vlans = [];
+
 array_vlans_descr = [];
 
+
+
 //OID variables
+
 stpTCN=&#34;.1.3.6.1.2.1.17.2.3.0&#34; //get the actual TCN for the STP (for each VLAN)
+
 vlan_indexes = &#34;.1.3.6.1.4.1.9.9.46.1.3.1.1.3&#34; //VLAN Type
+
 vlan_description = &#34;.1.3.6.1.4.1.9.9.46.1.3.1.1.4&#34; //VLAN Name
 
+
+
 //device variables
+
 deviceIP = hostProps.get(&#34;system.hostname&#34;);
-snmpCommunity_raw = hostProps.get(&#34;snmp.community&#34;);
-snmpVersion = hostProps.get(&#34;snmp.version&#34;);
+
+
 
 interfaceWalk = Snmp.walk(deviceIP, vlan_indexes)
+
 interfaceWalk.eachLine() {
+
 	line -&#62;
+
 		vlanType= line.minus(vlan_indexes + &#34;.&#34;).split(&#34; = &#34;)[1] //get the content of the specific OID
+
   		vlanNumber_raw= line.minus(vlan_indexes + &#34;.&#34;).split(&#34; = &#34;)[0] //get the actual extra OID portion that was added (since that&#39;s the actual VLAN ID)
+
 		vlanNumber = vlanNumber_raw.replace(&#34;1.&#34;, &#34;&#34;); //remove the WEIRD &#39;1.&#39; that get&#39;s added to the OID
 
-		if(vlanType != &#34;1&#34;){
-			//doNothing (since we only care about type==1 [ethernet])
-		}else{
+
+
+		if(vlanType == &#34;1&#34;) {
+
 			//DEBUG print
+
 			/*println &#34;####&#34;
+
 			println &#34;VLAN Type -&#62; &#34; +vlanType
+
 			println &#34;VLAN Number -&#62; &#34; +vlanNumber*/ 
+
 			array_vlans.push(vlanNumber); //add VLANS(s) to the array
 
+
+
 			//extract the actual VLAN descr. for ActiveDiscovery purposes
+
 			vlanDescr_OID=vlan_description+&#34;.&#34;+vlanNumber_raw
-			getVlan_descr= Snmp.get(deviceIP, snmpCommunity_raw, snmpVersion, vlanDescr_OID);
+
+			getVlan_descr= Snmp.get(deviceIP, vlanDescr_OID);
+
 			array_vlans_descr.push(getVlan_descr); //add VLANS(s) descr. to the array
+
 		}
+
 }
 
+
+
 //iterate over the VLAN array &#38; output the AD instances
+
 array_vlans.eachWithIndex{it,index-&#62;
+
     println it+&#34;##&#34;+&#34;Vlan &#34;+it+&#34;##&#34;+array_vlans_descr[index]; //output the Active Discovery result
+
 }
+
+
 
 return 0;</wildcardgroovyscript>
         <wildcardschedule>60</wildcardschedule>
@@ -84,7 +115,7 @@ return 0;</wildcardgroovyscript>
 Compatible with:
 
 - Cisco devices (excluding WLCs)</technology>
-        <adlist><![CDATA[{"agdmethod":"none","method":"ad_script","agdparams":"","id":0,"filters":[],"params":{"type":"embeded","groovyscript":"import com.santaba.agent.groovyapi.expect.Expect;\r\nimport com.santaba.agent.groovyapi.snmp.Snmp;\r\nimport com.santaba.agent.groovyapi.http.*;\r\nimport com.santaba.agent.groovyapi.jmx.*;\r\nimport org.xbill.DNS.*;\r\nimport com.santaba.agent.groovyapi.snmp.Snmp;\r\n\r\n//array to store the interfaces\r\narray_vlans = [];\r\narray_vlans_descr = [];\r\n\r\n//OID variables\r\nstpTCN=\".1.3.6.1.2.1.17.2.3.0\" //get the actual TCN for the STP (for each VLAN)\r\nvlan_indexes = \".1.3.6.1.4.1.9.9.46.1.3.1.1.3\" //VLAN Type\r\nvlan_description = \".1.3.6.1.4.1.9.9.46.1.3.1.1.4\" //VLAN Name\r\n\r\n//device variables\r\ndeviceIP = hostProps.get(\"system.hostname\");\r\nsnmpCommunity_raw = hostProps.get(\"snmp.community\");\r\nsnmpVersion = hostProps.get(\"snmp.version\");\r\n\r\ninterfaceWalk = Snmp.walk(deviceIP, vlan_indexes)\r\ninterfaceWalk.eachLine() {\r\n\tline ->\r\n\t\tvlanType= line.minus(vlan_indexes + \".\").split(\" = \")[1] //get the content of the specific OID\r\n  \t\tvlanNumber_raw= line.minus(vlan_indexes + \".\").split(\" = \")[0] //get the actual extra OID portion that was added (since that's the actual VLAN ID)\r\n\t\tvlanNumber = vlanNumber_raw.replace(\"1.\", \"\"); //remove the WEIRD '1.' that get's added to the OID\r\n\r\n\t\tif(vlanType != \"1\"){\r\n\t\t\t//doNothing (since we only care about type==1 [ethernet])\r\n\t\t}else{\r\n\t\t\t//DEBUG print\r\n\t\t\t/*println \"####\"\r\n\t\t\tprintln \"VLAN Type -> \" +vlanType\r\n\t\t\tprintln \"VLAN Number -> \" +vlanNumber*/ \r\n\t\t\tarray_vlans.push(vlanNumber); //add VLANS(s) to the array\r\n\r\n\t\t\t//extract the actual VLAN descr. for ActiveDiscovery purposes\r\n\t\t\tvlanDescr_OID=vlan_description+\".\"+vlanNumber_raw\r\n\t\t\tgetVlan_descr= Snmp.get(deviceIP, snmpCommunity_raw, snmpVersion, vlanDescr_OID);\r\n\t\t\tarray_vlans_descr.push(getVlan_descr); //add VLANS(s) descr. to the array\r\n\t\t}\r\n}\r\n\r\n//iterate over the VLAN array & output the AD instances\r\narray_vlans.eachWithIndex{it,index->\r\n    println it+\"##\"+\"Vlan \"+it+\"##\"+array_vlans_descr[index]; //output the Active Discovery result\r\n}\r\n\r\nreturn 0;"}}]]></adlist>
+        <adlist><![CDATA[{"agdmethod":"none","method":"ad_script","agdparams":"","id":0,"filters":[],"params":{"type":"embeded","groovyscript":"import com.santaba.agent.groovyapi.snmp.Snmp;\r\n\r\n//array to store the interfaces\r\narray_vlans = [];\r\narray_vlans_descr = [];\r\n\r\n//OID variables\r\nstpTCN=\".1.3.6.1.2.1.17.2.3.0\" //get the actual TCN for the STP (for each VLAN)\r\nvlan_indexes = \".1.3.6.1.4.1.9.9.46.1.3.1.1.3\" //VLAN Type\r\nvlan_description = \".1.3.6.1.4.1.9.9.46.1.3.1.1.4\" //VLAN Name\r\n\r\n//device variables\r\ndeviceIP = hostProps.get(\"system.hostname\");\r\n\r\ninterfaceWalk = Snmp.walk(deviceIP, vlan_indexes)\r\ninterfaceWalk.eachLine() {\r\n\tline ->\r\n\t\tvlanType= line.minus(vlan_indexes + \".\").split(\" = \")[1] //get the content of the specific OID\r\n  \t\tvlanNumber_raw= line.minus(vlan_indexes + \".\").split(\" = \")[0] //get the actual extra OID portion that was added (since that's the actual VLAN ID)\r\n\t\tvlanNumber = vlanNumber_raw.replace(\"1.\", \"\"); //remove the WEIRD '1.' that get's added to the OID\r\n\r\n\t\tif(vlanType == \"1\") {\r\n\t\t\t//DEBUG print\r\n\t\t\t/*println \"####\"\r\n\t\t\tprintln \"VLAN Type -> \" +vlanType\r\n\t\t\tprintln \"VLAN Number -> \" +vlanNumber*/ \r\n\t\t\tarray_vlans.push(vlanNumber); //add VLANS(s) to the array\r\n\r\n\t\t\t//extract the actual VLAN descr. for ActiveDiscovery purposes\r\n\t\t\tvlanDescr_OID=vlan_description+\".\"+vlanNumber_raw\r\n\t\t\tgetVlan_descr= Snmp.get(deviceIP, vlanDescr_OID);\r\n\t\t\tarray_vlans_descr.push(getVlan_descr); //add VLANS(s) descr. to the array\r\n\t\t}\r\n}\r\n\r\n//iterate over the VLAN array & output the AD instances\r\narray_vlans.eachWithIndex{it,index->\r\n    println it+\"##\"+\"Vlan \"+it+\"##\"+array_vlans_descr[index]; //output the Active Discovery result\r\n}\r\n\r\nreturn 0;"}}]]></adlist>
         <schemaVersion>2</schemaVersion>
         <dataSourceType>1</dataSourceType>
         <attributes>
@@ -95,12 +126,8 @@ Compatible with:
         </attribute>
         <attribute>
             <name>scriptgroovy</name>
-            <value>import com.santaba.agent.groovyapi.expect.Expect;
-import com.santaba.agent.groovyapi.snmp.Snmp;
-import com.santaba.agent.groovyapi.http.*;
-import com.santaba.agent.groovyapi.jmx.*;
-import org.xbill.DNS.*;
-import com.santaba.agent.groovyapi.snmp.Snmp;
+            <value>import com.santaba.agent.groovyapi.snmp.Snmp;
+import com.santaba.agent.collector3.snmp.SNMPCollector;
 
 //array to store the interfaces
 array_vlans = [];
@@ -111,7 +138,7 @@ vlan_indexes = &#34;.1.3.6.1.4.1.9.9.46.1.3.1.1.3&#34; //CISCO VLAN MIB
 
 //device variables
 deviceIP = hostProps.get(&#34;system.hostname&#34;);
-snmpCommunity_raw = hostProps.get(&#34;snmp.community&#34;);
+snmpCommunity = hostProps.get(&#34;snmp.community&#34;) ?: &#34;public&#34;
 snmpVersion = hostProps.get(&#34;snmp.version&#34;);
 
 interfaceWalk = Snmp.walk(deviceIP, vlan_indexes)
@@ -121,9 +148,7 @@ interfaceWalk.eachLine() {
   		vlanNumber_raw= line.minus(vlan_indexes + &#34;.&#34;).split(&#34; = &#34;)[0] //get the actual extra OID portion that was added (since that&#39;s the actual VLAN ID)
 		vlanNumber = vlanNumber_raw.replace(&#34;1.&#34;, &#34;&#34;); //remove the WEIRD &#39;1.&#39; that get&#39;s added to the OID
 
-		if(vlanType != &#34;1&#34;){
-			//doNothing (since we only care about type==1 [ethernet])
-		}else{
+		if(vlanType == &#34;1&#34;) {
 			//DEBUG print
 			/*println &#34;####&#34;
 			println &#34;VLAN Type -&#62; &#34; +vlanType
@@ -133,11 +158,16 @@ interfaceWalk.eachLine() {
 }
 
 //iterate over the VLAN array &#38; do the SNMP GET per vlan (to retrieve the TopologyChange metric)
-array_vlans.each(){
+array_vlans.each() {
 	vlanID=it
-	snmpCommunity=snmpCommunity_raw+&#34;@&#34;+vlanID
-	getVlan_TCN= Snmp.get(deviceIP, snmpCommunity, snmpVersion, stpTCN);
-	println vlanID+&#34;.LastTopologyChange=&#34;+getVlan_TCN
+	if (snmpVersion == &#34;v1&#34; || snmpVersion == &#34;v2c&#34;) {
+	    snmpCommunityContext = snmpCommunity+&#34;@&#34;+vlanID
+	    TCN = new SNMPCollector()._convertTime(Snmp.get(deviceIP, snmpCommunityContext, snmpVersion, stpTCN));
+	    println vlanID+&#34;.LastTopologyChange=&#34;+TCN
+	}
+	else if (snmpVersion == &#34;v3&#34;) {
+	    // UNSUPPORTED FOR NOW -- NEED TO USE CONTEXT &#34;vlan-$vlanID&#34;
+	}
 }
 
 return 0;</value>
@@ -166,7 +196,7 @@ return 0;</value>
         </attributes>
         <datapoints>
         <datapoint>
-            <name>elapsedTimeTicks</name>
+            <name>lastTCNTimeTicks</name>
             <dataType>7</dataType>
             <type>2</type>
             <postprocessormethod>namevalue</postprocessormethod>
@@ -193,11 +223,11 @@ return 0;</value>
             <alertClearTransitionIval>0</alertClearTransitionIval>
         </datapoint>
         <datapoint>
-            <name>elapsedSeconds</name>
+            <name>lastTCNSeconds</name>
             <dataType>7</dataType>
             <type>2</type>
             <postprocessormethod>expression</postprocessormethod>
-            <postprocessorparam>elapsedTimeTicks / 100</postprocessorparam>
+            <postprocessorparam>lastTCNTimeTicks / 100</postprocessorparam>
             <usevalue></usevalue>
             <alertexpr></alertexpr>
             <alertmissing>1</alertmissing>
